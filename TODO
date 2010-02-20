@@ -1,0 +1,15 @@
+Things to be done:
+
+ * terminate service on timeout if unused
+ * implement track reordering and inserting uri in custom position
+ * improve GUI:
+  - playlist row activation should automatically play uri,
+    not only set it as current
+  - add playlist drag-n-drop
+  - support simple command-line parameters
+  - save window size and position
+ * add command-line interface
+ * handle errors: bad uri's, broken streams, etc.
+ * improve setup: add .service and .desktop files, add
+   file accociations
+ * add license headers and README files
