@@ -28,12 +28,19 @@ class Application(object):
         self._playlist_store = builder.get_object('playlist_store')
         self._playlist_view = builder.get_object('playlist_view')
         self._playlist_view.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        self._playlist_view.enable_model_drag_dest([('text/uri-list', 0, 0)], gtk.gdk.ACTION_DEFAULT)
+        self._playlist_view.connect('drag-data-received', self.on_drag_data_received)
         self._play_action = builder.get_object('play_action')
         self._pause_action = builder.get_object('pause_action')
         self._stop_action = builder.get_object('stop_action')
-
+        
         self._update_playlist_store()
         self._update_control_actions(self._player.get_state())
+
+  
+    def on_drag_data_received(self, view, context, x, y, selection, info, timestamp):
+        uris = [uri for uri in selection.data.split('\r\n') if uri]
+        self._player.add(uris)
 
     def _append_uri(self, uri):
         f = gio.File(uri=uri)

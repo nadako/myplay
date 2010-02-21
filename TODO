@@ -4,7 +4,6 @@ Things to be done:
  * improve GUI:
   - playlist row activation should automatically play uri,
     not only set it as current
-  - add playlist drag-n-drop
   - support simple command-line parameters
   - save window size and position
  * add command-line interface

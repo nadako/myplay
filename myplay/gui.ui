@@ -18,51 +18,46 @@
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkHButtonBox" id="hbuttonbox2">
+          <object class="GtkToolbar" id="toolbar1">
             <property name="visible">True</property>
-            <property name="border_width">6</property>
-            <property name="spacing">12</property>
-            <property name="layout_style">start</property>
+            <property name="toolbar_style">icons</property>
             <child>
-              <object class="GtkButton" id="button4">
+              <object class="GtkToolButton" id="toolbutton1">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="use_action_appearance">True</property>
                 <property name="related_action">play_action</property>
-                <property name="use_action_appearance">True</property>
+                <property name="label" translatable="yes">toolbutton1</property>
+                <property name="use_underline">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
+                <property name="homogeneous">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button5">
+              <object class="GtkToolButton" id="toolbutton2">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="use_action_appearance">True</property>
                 <property name="related_action">pause_action</property>
-                <property name="use_action_appearance">True</property>
+                <property name="label" translatable="yes">toolbutton2</property>
+                <property name="use_underline">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
+                <property name="homogeneous">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button6">
+              <object class="GtkToolButton" id="toolbutton3">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="related_action">stop_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">stop_action</property>
+                <property name="label" translatable="yes">toolbutton3</property>
+                <property name="use_underline">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">2</property>
+                <property name="homogeneous">True</property>
               </packing>
             </child>
           </object>
@@ -118,8 +113,8 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="related_action">add_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">add_action</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -132,8 +127,8 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="related_action">remove_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">remove_action</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -146,13 +141,14 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="related_action">clear_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">clear_action</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="position">2</property>
+                <property name="secondary">True</property>
               </packing>
             </child>
           </object>
