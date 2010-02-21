@@ -1,6 +1,5 @@
 Things to be done:
 
- * terminate service on timeout if unused
  * implement track reordering and inserting uri in custom position
  * improve GUI:
   - playlist row activation should automatically play uri,

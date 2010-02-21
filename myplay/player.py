@@ -12,7 +12,7 @@ GST_PLAY_FLAG_AUDIO = 1 << 1
 
 class Player(dbus.service.Object):
     
-    def __init__(self):
+    def __init__(self, idle_callback=None):
         dbus.service.Object.__init__(self)
         
         self._player = gst.element_factory_make('playbin2', 'player')
@@ -26,6 +26,18 @@ class Player(dbus.service.Object):
 
         self._current = -1
         self._state = STATE_READY
+        self._idle_callback = idle_callback
+        self.idle = True
+    
+    @apply
+    def idle():
+        def fget(self):
+            return self._idle
+        def fset(self, value):
+            self._idle = value
+            if self._idle_callback is not None:
+                self._idle_callback(self, value)
+        return property(fget, fset)
     
     def _on_player_message(self, bus, message):
         t = message.type
@@ -116,6 +128,10 @@ class Player(dbus.service.Object):
         if new != old:
             self._state = new
             self.state_changed(old, new)
+            if new == STATE_READY:
+                self.idle = True
+            else:
+                self.idle = False
 
     @dbus.service.method(OBJECT_INTERFACE)
     def play(self):
