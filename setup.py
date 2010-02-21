@@ -48,5 +48,10 @@ setup(
             'myplay = myplay.gui:main',
             'myplay-service = myplay.service:main'
         ]
-    }
+    },
+    include_package_data=True,
+    data_files=[
+        ('share/dbus-1/services', ['data/org.nadako.myplay.service']),
+        ('share/applications', ['data/myplay.desktop']),
+    ]
 )

@@ -1,12 +1,9 @@
 Things to be done:
 
- * implement track reordering and inserting uri in custom position
  * improve GUI:
-  - playlist row activation should automatically play uri,
-    not only set it as current
   - support simple command-line parameters
   - save window size and position
  * add command-line interface
  * handle errors: bad uri's, broken streams, etc.
- * improve setup: add .service and .desktop files, add
-   file accociations
+ * add file accociations
+ * support tags (also try to support legacy ID3 encodings mis-usage)

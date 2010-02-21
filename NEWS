@@ -6,4 +6,13 @@ Changes
 
 Initial release. Provided features:
 
- * ...
+ * Playlist management including adding, removing, clearing, reordering
+   and automatic save in user's XDG data directory.
+ * Play control including temporary pausing and full stopping.
+ * Changing of currently playing track using next/previous methods,
+   explicit playlist position selection and automatically playing next
+   track when current finishes.
+ * Automatic service termination if unused for 5 seconds.
+ * Automatic service starting using .service file provided (you may need to
+   adjust the path if you're not installing with /usr/local prefix).
+ * GTK+-based GUI for all of functionality above.

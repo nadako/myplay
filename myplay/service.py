@@ -16,39 +16,40 @@
 # You should have received a copy of the GNU General Public License
 # along with MyPlay.  If not, see <http://www.gnu.org/licenses/>.
 #
+import dbus
 import dbus.mainloop.glib
 import dbus.service
 import gobject
-from myplay.player import Player
+
 from myplay.common import BUS_NAME, OBJECT_PATH
+from myplay.player import Player
 
-
-IDLE_TIMEOUT = 5 # idle timeout before quitting service
-
+IDLE_TIMEOUT = 5
 
 class Application(object):
     
     def __init__(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        self._timeout_id = 0
-        self._player = Player(self.idle_callback)
-        self._bus_name_ = dbus.service.BusName(BUS_NAME, dbus.SessionBus()) # store a reference
-        self._player.add_to_connection(self._bus_name_.get_bus(), OBJECT_PATH)
         self._loop = gobject.MainLoop()
+        bus = dbus.SessionBus()
+        self._timeout_id = 0
+        self._bus_name = dbus.service.BusName(BUS_NAME, bus) # preserve well known bus name
+        self._player = Player(self.idle_callback)
+        self._player.add_to_connection(bus, OBJECT_PATH)
     
-    def run(self):
-        self._loop.run()
-
-    def quit(self):
-        self._loop.quit()
-
     def idle_callback(self, player, idle):
         if not idle and self._timeout_id:
             gobject.source_remove(self._timeout_id)
             self._timeout_id = 0
         elif idle and not self._timeout_id:
             self._timeout_id = gobject.timeout_add_seconds(IDLE_TIMEOUT, self.quit)
-
+    
+    def run(self):
+        self._loop.run()
+    
+    def quit(self):
+        self._player.remove_from_connection()
+        self._loop.quit()
 
 def main():
     app = Application()

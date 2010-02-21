@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=MyPlay
+Comment=Play music
+Exec=myplay %U
+Icon=gtk-media-play
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;AudioVideo;Player;Audio;
+StartupNotify=true

@@ -16,35 +16,161 @@
 # You should have received a copy of the GNU General Public License
 # along with MyPlay.  If not, see <http://www.gnu.org/licenses/>.
 #
-import cPickle as pickle
 import os
+import cPickle as pickle
 
 import dbus.service
 import gst
 from xdg.BaseDirectory import save_data_path
 
-from myplay.common import OBJECT_INTERFACE
-from myplay.common import STATE_READY, STATE_PAUSED, STATE_PLAYING
-
+from myplay.common import OBJECT_IFACE, CURRENT_UNSET, STATE_READY, STATE_PLAYING, STATE_PAUSED
 
 GST_PLAY_FLAG_AUDIO = 1 << 1
 
+class InvalidPlaylistPosition(dbus.service.DBusException):
+    _dbus_error_name = 'org.nadako.myplay.InvalidPlaylistPosition'
+
+class InvalidPlaylistLength(dbus.service.DBusException):
+    _dbus_error_name = 'org.nadako.myplay.InvalidPlaylistLength'
 
 class Player(dbus.service.Object):
     
+    @dbus.service.method(OBJECT_IFACE, out_signature='as')
+    def list(self):
+        return tuple(self._playlist)
+    
+    @dbus.service.method(OBJECT_IFACE, in_signature='asi')
+    def add(self, uris, position):
+        if (position != -1) and (position < 0) or (position > len(self._playlist)):
+            raise InvalidPlaylistPosition(position)
+        if uris:
+            self._playlist[position:position] = [str(uri) for uri in uris]
+            self._save_playlist()
+            self.added(uris, position)
+    
+    @dbus.service.method(OBJECT_IFACE, in_signature='au')
+    def remove(self, positions):
+        playlist_len = len(self._playlist)
+        remove_current = False
+        for pos in positions:
+            if (pos < 0) or (pos >= playlist_len):
+                raise InvalidPlaylistPosition(pos)
+            if pos == self._current:
+                remove_current = True
+        self._playlist = [uri for i, uri in enumerate(self._playlist) if i not in positions]
+        self._save_playlist()
+        self.removed(positions)
+        if remove_current:
+            self.set_current(CURRENT_UNSET)
+            if self._state == STATE_PLAYING:
+                self.stop()
+    
+    @dbus.service.method(OBJECT_IFACE)
+    def clear(self):
+        self._playlist[:] = []
+        self._save_playlist()
+        self.cleared()
+    
+    @dbus.service.method(OBJECT_IFACE, in_signature='au')
+    def reorder(self, positions):
+        playlist_len = len(self._playlist)
+        if len(positions) != playlist_len:
+            raise InvalidPlaylistLength(self._playlist)
+        new_playlist = []
+        for pos in positions:
+            if (pos < 0) or (pos >= playlist_len):
+                raise InvalidPlaylistPosition(pos)
+            new_playlist.append(self._playlist[pos])
+        self._playlist[:] = new_playlist
+        self._save_playlist()
+        self.reordered(positions)
+    
+    @dbus.service.method(OBJECT_IFACE, out_signature='i')
+    def get_current(self):
+        return self._current
+    
+    @dbus.service.method(OBJECT_IFACE, in_signature='i')
+    def set_current(self, position):
+        if (position != CURRENT_UNSET) and (position < 0 or position >= len(self._playlist)):
+            raise InvalidPlaylistPosition()
+        self._change_current(position)
+    
+    @dbus.service.method(OBJECT_IFACE)
+    def next(self):
+        if (self._current != CURRENT_UNSET) and self._current != (len(self._playlist) - 1):
+            self._change_current(self._current + 1)
+    
+    @dbus.service.method(OBJECT_IFACE)
+    def previous(self):
+        if (self._current != CURRENT_UNSET) and (self._current != 0):
+            self._change_current(self._current - 1)
+    
+    @dbus.service.method(OBJECT_IFACE)
+    def play(self):
+        if self._state in (STATE_READY, STATE_PAUSED):
+            if self._state == STATE_READY:
+                self._player.set_property('uri', self._playlist[self._current])
+            self._player.set_state(gst.STATE_PLAYING)
+            self._change_state(STATE_PLAYING)
+    
+    @dbus.service.method(OBJECT_IFACE, in_signature='u')
+    def set_current_and_play(self, position):
+        self.set_current(position)
+        self.play()
+
+    @dbus.service.method(OBJECT_IFACE)
+    def pause(self):
+        if self._state == STATE_PLAYING:
+            self._player.set_state(gst.STATE_PAUSED)
+            self._change_state(STATE_PAUSED)
+    
+    @dbus.service.method(OBJECT_IFACE)
+    def stop(self):
+        if self._state in (STATE_PLAYING, STATE_PAUSED):
+            self._player.set_state(gst.STATE_READY)
+            self._player.set_property('uri', '')
+            self._change_state(STATE_READY)
+
+    @dbus.service.method(OBJECT_IFACE, out_signature='u')
+    def get_state(self):
+        return self._state
+
+    @dbus.service.signal(OBJECT_IFACE, signature='asi')
+    def added(self, uris, position):
+        pass
+    
+    @dbus.service.signal(OBJECT_IFACE, signature='au')
+    def removed(self, positions):
+        pass
+    
+    @dbus.service.signal(OBJECT_IFACE)
+    def cleared(self):
+        pass
+    
+    @dbus.service.signal(OBJECT_IFACE, signature='au')
+    def reordered(self, positions):
+        pass
+    
+    @dbus.service.signal(OBJECT_IFACE, signature='ii')
+    def current_changed(self, old_position, new_position):
+        pass
+    
+    @dbus.service.signal(OBJECT_IFACE, signature='uu')
+    def state_changed(self, old_state, new_state):
+        pass
+
     def __init__(self, idle_callback=None):
-        dbus.service.Object.__init__(self)
+        super(Player, self).__init__()
+        
+        self._playlist_path = os.path.join(save_data_path('myplay'), 'playlist')
+        self._init_playlist()
         
         self._player = gst.element_factory_make('playbin2', 'player')
         self._player.set_property('flags', GST_PLAY_FLAG_AUDIO)
         player_bus = self._player.get_bus()
         player_bus.add_signal_watch()
-        player_bus.connect('message', self._on_player_message)
+        player_bus.connect('message', self.on_player_message)
 
-        self._playlist_path = os.path.join(save_data_path('myplay'), 'playlist')
-        self._init_playlist()
-
-        self._current = -1
         self._state = STATE_READY
         self._idle_callback = idle_callback
         self.idle = True
@@ -52,96 +178,38 @@ class Player(dbus.service.Object):
     @apply
     def idle():
         def fget(self):
-            return self._idle
+            return getattr(self, '_idle', False)
         def fset(self, value):
-            self._idle = value
+            setattr(self, '_idle', value)
             if self._idle_callback is not None:
                 self._idle_callback(self, value)
         return property(fget, fset)
     
-    def _on_player_message(self, bus, message):
+    def on_player_message(self, element, message):
         t = message.type
         if t == gst.MESSAGE_EOS:
-            self._player.set_state(gst.STATE_NULL)
-            self._next_track()
+            if self._current != (len(self._playlist) - 1):
+                self.next()
+            else:
+                self.stop()
 
     def _init_playlist(self):
         self._playlist = []
+        self._current = CURRENT_UNSET
         if os.path.exists(self._playlist_path):
             try:
-                self._playlist = pickle.load(open(self._playlist_path, 'rb'))
+                data = pickle.load(open(self._playlist_path, 'rb'))
+                self._playlist = data['playlist']
+                self._current = data['current']
             except:
                 pass
     
     def _save_playlist(self):
         if self._playlist:
-            pickle.dump(self._playlist, open(self._playlist_path, 'wb'))
+            data = {'playlist': self._playlist, 'current': self._current}
+            pickle.dump(data, open(self._playlist_path, 'wb'))
         elif os.path.exists(self._playlist_path):
             os.unlink(self._playlist_path)
-
-    @dbus.service.method(OBJECT_INTERFACE, in_signature='as')
-    def add(self, uris):
-        for uri in uris:
-            self._playlist.append(str(uri))
-        self._save_playlist()
-        self.added(uris)
-    
-    @dbus.service.method(OBJECT_INTERFACE, in_signature='au')
-    def remove(self, positions):
-        self._playlist = [uri for i, uri in enumerate(self._playlist) if i not in positions]
-        self._save_playlist()
-        self.removed(positions)
-
-    @dbus.service.method(OBJECT_INTERFACE, out_signature='as')
-    def list(self):
-        return tuple(self._playlist)
-
-    @dbus.service.method(OBJECT_INTERFACE)
-    def clear(self):
-        self._playlist[:] = []
-        self._save_playlist()
-        self.cleared()
-
-    @dbus.service.signal(OBJECT_INTERFACE, signature='as')
-    def added(self, uris):
-        pass
-
-    @dbus.service.signal(OBJECT_INTERFACE, signature='au')
-    def removed(self, positions):
-        pass
-
-    @dbus.service.signal(OBJECT_INTERFACE)
-    def cleared(self):
-        pass
-
-    @dbus.service.method(OBJECT_INTERFACE, out_signature='i')
-    def get_current(self):
-        return self._current
-
-    @dbus.service.method(OBJECT_INTERFACE, in_signature='i')
-    def set_current(self, position):
-        if self._current != position:
-            self._current = position
-            self.current_changed(position)
-
-    @dbus.service.signal(OBJECT_INTERFACE, signature='i')
-    def current_changed(self, position):
-        pass
-
-    @dbus.service.method(OBJECT_INTERFACE, out_signature='u')
-    def get_state(self):
-        return self._state
-
-    @dbus.service.method(OBJECT_INTERFACE, in_signature='u')
-    def set_state(self, state):
-        old = self._state
-        if state != old:
-            self._state = state
-            self.state_changed(old, state)
-    
-    @dbus.service.signal(OBJECT_INTERFACE, signature='uu')
-    def state_changed(self, old, new):
-        pass
 
     def _change_state(self, new):
         old = self._state
@@ -153,35 +221,24 @@ class Player(dbus.service.Object):
             else:
                 self.idle = False
 
-    @dbus.service.method(OBJECT_INTERFACE)
-    def play(self):
-        if self._state == STATE_READY and self._current != -1:
-            self._player.set_property('uri', self._playlist[self._current])
-            self._player.set_state(gst.STATE_PLAYING)
-            self._change_state(STATE_PLAYING)
-        elif self._state == STATE_PAUSED:
-            self._player.set_state(gst.STATE_PLAYING)
-            self._change_state(STATE_PLAYING)
-    
-    @dbus.service.method(OBJECT_INTERFACE)
-    def pause(self):
-        if self._state == STATE_PLAYING:
-            self._player.set_state(gst.STATE_PAUSED)
-            self._change_state(STATE_PAUSED)
-    
-    @dbus.service.method(OBJECT_INTERFACE)
-    def stop(self):
-        if self._state in (STATE_PLAYING, STATE_PAUSED):
-            self._player.set_state(gst.STATE_NULL)
-            self._change_state(STATE_READY)
-
-    def _next_track(self):
-        if self._current != (len(self._playlist) - 1):
-            self._current += 1
-            self._player.set_property('uri', self._playlist[self._current])
-            self._player.set_state(gst.STATE_PLAYING)
-            self.current_changed(self._current)
-        else:
-            self._current = -1
-            self.current_changed(-1)
-            self._change_state(STATE_READY)
+    def _change_current(self, new):
+        old = self._current
+        if new != old:
+            newstate = None
+            if new == CURRENT_UNSET:
+                self._player.set_state(gst.STATE_READY)
+                self._player.set_property('uri', '')
+            else:
+                if self._state in (STATE_PLAYING, STATE_PAUSED):
+                    self._player.set_state(gst.STATE_READY)
+                    self._player.set_property('uri', self._playlist[new])
+                    if self._state == STATE_PAUSED:
+                        self._player.set_state(gst.STATE_READY)
+                        newstate = STATE_READY
+                    else:
+                        self._player.set_state(gst.STATE_PLAYING)
+            self._current = int(new)
+            self._save_playlist()
+            self.current_changed(old, new)
+            if newstate is not None:
+                self._change_state(newstate)
