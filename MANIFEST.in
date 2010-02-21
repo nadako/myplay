@@ -1,0 +1,2 @@
+include TODO LICENSE README NEWS
+include myplay/gui.ui

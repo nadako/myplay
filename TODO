@@ -10,4 +10,3 @@ Things to be done:
  * handle errors: bad uri's, broken streams, etc.
  * improve setup: add .service and .desktop files, add
    file accociations
- * add license headers and README files

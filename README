@@ -1,0 +1,13 @@
+MyPlay is a very simple music player. It follows two main principles that
+make it kinda different:
+
+ * It works directly with files, without creating a "music library", so it's
+   your freedom and duty to organize your collection as you want with ordinary
+   folders.
+ 
+ * It works as a background service, playing its playlist without creating any
+   windows or notification icons. However a number of UIs can be provided to
+   control it. This package provides simple GTK+-based graphical interface.
+
+The player is implemented as a D-BUS service utilizing GStreamer framework to do
+actual playing. It provides a D-BUS interface to modify playlist and control playing.
