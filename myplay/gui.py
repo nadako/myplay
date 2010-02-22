@@ -29,6 +29,13 @@ from myplay.common import STATE_READY, STATE_PLAYING, STATE_PAUSED, CURRENT_UNSE
 DND_REODER = 0
 DND_ADD = 1
 
+COL_CURRENT = 0
+COL_URI = 1
+COL_PATH = 2
+COL_TITLE = 3
+COL_ARTIST = 4
+COL_ALBUM = 5
+
 class Application(object):
 
     def __init__(self):
@@ -107,10 +114,10 @@ class Application(object):
         self._playlist_store.clear()
         for i, (uri, tags) in enumerate(list):
             row = self._make_row(uri)
-            row[0] = (i == current) and 'gtk-media-play' or None
-            row[3] = tags.get(gst.TAG_TITLE) or row[3]
-            row[4] = tags.get(gst.TAG_ARTIST)
-            row[5] = tags.get(gst.TAG_ALBUM)
+            row[COL_CURRENT] = (i == current) and 'gtk-media-play' or None
+            row[COL_TITLE] = tags.get(gst.TAG_TITLE) or row[3]
+            row[COL_ARTIST] = tags.get(gst.TAG_ARTIST)
+            row[COL_ALBUM] = tags.get(gst.TAG_ALBUM)
             self._playlist_store.append(row)
 
     def _get_playlist_length(self):
@@ -118,7 +125,7 @@ class Application(object):
 
     def _set_current(self, value):
         def func(model, path, iter):
-            model.set(iter, 0, 'gtk-media-play' if (path[0] == value) else None)
+            model.set(iter, COL_CURRENT, 'gtk-media-play' if (path[0] == value) else None)
         self._playlist_store.foreach(func)
         playlist_len = self._get_playlist_length()
         if value == CURRENT_UNSET or playlist_len == 0:
@@ -143,11 +150,12 @@ class Application(object):
 
     def on_tag_changed_signal(self, uri, tag):
         def func(model, path, iter):
-            if model.get(iter, 1)[0] == uri:
+            row_uri, row_path = model.get(iter, 1, 2)
+            if row_uri == uri:
                 cols = (
-                    3, tag.get(gst.TAG_TITLE),
-                    4, tag.get(gst.TAG_ARTIST),
-                    5, tag.get(gst.TAG_ALBUM),
+                    COL_TITLE, tag.get(gst.TAG_TITLE) or row_path,
+                    COL_ARTIST, tag.get(gst.TAG_ARTIST),
+                    COL_ALBUM, tag.get(gst.TAG_ALBUM),
                 )
                 model.set(iter, *cols)
         self._playlist_store.foreach(func)

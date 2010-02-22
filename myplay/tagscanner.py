@@ -60,12 +60,17 @@ class TagScanner(object):
         self._player.set_state(gst.STATE_PAUSED)
 
     def _on_tag_message(self, bus, message):
-        info = self._tags.setdefault(self._player.get_property('uri'), {})
+        uri = self._player.get_property('uri')
+        info = self._tags.get(uri, {})
+
         tags = message.parse_tag()
         for key in tags.keys():
             if (key not in USED_TAGS) or (key in info and info[key] == tags[key]):
                 continue
             info[key] = tags[key]
+
+        if info:
+            self._tags[uri] = info
 
     def _on_element_message(self, bus, message):
         if message.structure.has_name('playbin2-stream-changed'):
