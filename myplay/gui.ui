@@ -111,6 +111,7 @@
                 <property name="can_focus">True</property>
                 <property name="model">playlist_store</property>
                 <property name="tooltip_column">2</property>
+                <signal name="key_press_event" handler="on_playlist_view_key_press_event"/>
                 <signal name="row_activated" handler="on_playlist_view_row_activated"/>
                 <child>
                   <object class="GtkTreeViewColumn" id="treeviewcolumn2">
@@ -252,11 +253,13 @@
   <object class="GtkAction" id="remove_action">
     <property name="stock_id">gtk-remove</property>
     <property name="is_important">True</property>
+    <property name="sensitive">False</property>
     <signal name="activate" handler="on_remove_action_activate"/>
   </object>
   <object class="GtkAction" id="clear_action">
     <property name="stock_id">gtk-clear</property>
     <property name="is_important">True</property>
+    <property name="sensitive">False</property>
     <signal name="activate" handler="on_clear_action_activate"/>
   </object>
   <object class="GtkAction" id="previous_action">

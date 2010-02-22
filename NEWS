@@ -17,7 +17,8 @@ Changes
  * Rename DBus exception names. Note, that the API is considered unstable before
    version 1.0, so I can do whatever I want, hahaha :-)
  * Add playlist row tooltip showing path to a file.
- * Misc code fixes.
+ * Support removing tracks from playlist using Delete key.
+ * Misc code and GUI fixes.
 
 0.1.0 (2010-02-22)
 ------------------

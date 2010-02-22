@@ -57,7 +57,10 @@ class Application(object):
         self._window = builder.get_object('main_window')
         self._play_pause_button = builder.get_object('play_pause_button')
         self._playlist_view = builder.get_object('playlist_view')
-        self._playlist_view.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        
+        selection = self._playlist_view.get_selection()
+        selection.set_mode(gtk.SELECTION_MULTIPLE)
+        selection.connect('changed', self.on_selection_changed)
         
         self._playlist_view.enable_model_drag_source(
             gtk.gdk.BUTTON1_MASK,
@@ -73,20 +76,37 @@ class Application(object):
         
         self._playlist_store = builder.get_object('playlist_store')
 
+        self._playlist_store.connect('row-inserted', self._update_clear_button)
+        self._playlist_store.connect('row-deleted', self._update_clear_button)
+
         self._actions = {
             'next': builder.get_object('next_action'),
             'previous': builder.get_object('previous_action'),
             'play': builder.get_object('play_action'),
             'pause': builder.get_object('pause_action'),
             'stop': builder.get_object('stop_action'),
+            'remove': builder.get_object('remove_action'),
+            'clear': builder.get_object('clear_action'),
         }
 
         self._initialize_ui()
+
+    def on_selection_changed(self, selection):
+        if selection.count_selected_rows():
+            self._actions['remove'].set_sensitive(True)
+        else:
+            self._actions['remove'].set_sensitive(False)
     
     def _initialize_ui(self):
         self._update_state(self._player.get_state())
         self._update_playlist(self._player.list(), self._player.get_current())
         self._set_current(self._player.get_current())
+
+    def _update_clear_button(self, *args):
+        if self._get_playlist_length():
+            self._actions['clear'].set_sensitive(True)
+        else:
+            self._actions['clear'].set_sensitive(False)
     
     def _update_state(self, state):
         a = self._actions
@@ -205,7 +225,8 @@ class Application(object):
     def on_remove_action_activate(self, action):
         selection = self._playlist_view.get_selection()
         paths = selection.get_selected_rows()[1]
-        self._player.remove([i[0] for i in paths])
+        if paths:
+            self._player.remove([i[0] for i in paths])
 
     def on_clear_action_activate(self, action):
         self._player.clear()
@@ -227,6 +248,12 @@ class Application(object):
 
     def on_playlist_view_row_activated(self, view, path, column):
         self._player.set_current_and_play(path[0])
+
+    def on_playlist_view_key_press_event(self, view, event):
+        if gtk.gdk.keyval_name(event.keyval) == 'Delete':
+            self._actions['remove'].activate()
+            return True
+        return False
 
     def on_drag_data_get(self, view, context, selection, info, timestamp):
         paths = view.get_selection().get_selected_rows()[1]
