@@ -133,12 +133,9 @@ class Application(object):
     
     def _update_playlist(self, list, current):
         self._playlist_store.clear()
-        for i, (uri, tags) in enumerate(list):
-            row = self._make_row(uri)
+        for i, track in enumerate(list):
+            row = self._make_row(*track)
             row[COL_CURRENT] = (i == current) and 'gtk-media-play' or None
-            row[COL_TITLE] = tags.get(gst.TAG_TITLE) or row[3]
-            row[COL_ARTIST] = tags.get(gst.TAG_ARTIST)
-            row[COL_ALBUM] = tags.get(gst.TAG_ALBUM)
             self._playlist_store.append(row)
 
     def _get_playlist_length(self):
@@ -187,20 +184,23 @@ class Application(object):
     def on_current_changed_signal(self, old_current, new_current):
         self._set_current(new_current)
 
-    def _make_row(self, uri):
+    def _make_row(self, uri, tag):
         uri = str(uri)
         path = self._get_path_or_uri(uri)
-        return [None, uri, path, path, None, None]
+        title = tag.get(gst.TAG_TITLE) or path
+        artist = tag.get(gst.TAG_ARTIST)
+        album = tag.get(gst.TAG_ALBUM)
+        return [None, uri, path, title, artist, album]
 
-    def on_added_signal(self, uris, position):
-        first, uris = uris[0], uris[1:]
+    def on_added_signal(self, tracks, position):
+        first, tracks = tracks[0], tracks[1:]
         if position == self._get_playlist_length():
-            iter = self._playlist_store.append(self._make_row(first))
+            iter = self._playlist_store.append(self._make_row(*first))
         else:
             before = self._playlist_store.get_iter((position, ))
-            iter = self._playlist_store.insert_before(before, self._make_row(first))
-        for uri in uris:
-            iter = self._playlist_store.insert_after(iter, self._make_row(uri))
+            iter = self._playlist_store.insert_before(before, self._make_row(*first))
+        for track in tracks:
+            iter = self._playlist_store.insert_after(iter, self._make_row(*track))
     
     def on_removed_signal(self, positions):
         iters = []

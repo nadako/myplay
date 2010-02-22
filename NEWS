@@ -10,6 +10,9 @@ Changes
       of (uri, tag_dict) tuples.
     - Added the tag_changed(uri, tag_dict) signal. It is fired when
       player receives new tag information about some uri.
+    - The added(tracks, position) signal now had different first parameter
+      type: instead of array of uris, it's now an array of (uri, tag_dict)
+      tuples, like in the "list" method.
     - Display tags in GUI.
  * The "add" method doesn't support -1 position anymore, use playlist length
    instead (so it added before inexistant after-last element, just like

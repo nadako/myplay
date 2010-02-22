@@ -56,8 +56,13 @@ class Player(dbus.service.Object):
         uris = [str(uri) for uri in uris]
         self._playlist[position:position] = uris
         self._save_playlist()
-        self.added(uris, position)
-        self._tag_scanner.add(uris)
+        
+        add_info = [(uri, self._tags.get(uri, {})) for uri in uris]
+        self.added(add_info, position)
+
+        no_tags = [uri for uri in uris if uri not in self._tags]
+        if no_tags:
+            self._tag_scanner.add(no_tags)
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def remove(self, positions):
@@ -153,8 +158,8 @@ class Player(dbus.service.Object):
     def get_state(self):
         return self._state
 
-    @dbus.service.signal(OBJECT_IFACE, signature='asi')
-    def added(self, uris, position):
+    @dbus.service.signal(OBJECT_IFACE, signature='a(sa{ss})i')
+    def added(self, tracks, position):
         pass
     
     @dbus.service.signal(OBJECT_IFACE, signature='au')
