@@ -218,6 +218,7 @@ class Application(object):
         dialog = gtk.FileChooserDialog('Add files', self._window)
         dialog.add_button('Add', gtk.RESPONSE_OK)
         dialog.set_select_multiple(True)
+        dialog.set_local_only(False)
         if dialog.run() == gtk.RESPONSE_OK:
             self._player.add(dialog.get_uris(), self._get_playlist_length())
         dialog.destroy()
