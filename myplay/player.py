@@ -83,6 +83,9 @@ class Player(dbus.service.Object):
         self._playlist[:] = []
         self._save_playlist()
         self.cleared()
+        self.set_current(CURRENT_UNSET)
+        if self._state == STATE_PLAYING:
+            self.stop()
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def reorder(self, positions):
@@ -142,7 +145,7 @@ class Player(dbus.service.Object):
     @dbus.service.method(OBJECT_IFACE)
     def stop(self):
         if self._state in (STATE_PLAYING, STATE_PAUSED):
-            self._player.set_state(gst.STATE_READY)
+            self._player.set_state(gst.STATE_NULL)
             self._player.set_property('uri', '')
             self._change_state(STATE_READY)
 
@@ -255,14 +258,14 @@ class Player(dbus.service.Object):
         if new != old:
             newstate = None
             if new == CURRENT_UNSET:
-                self._player.set_state(gst.STATE_READY)
+                self._player.set_state(gst.STATE_NULL)
                 self._player.set_property('uri', '')
             else:
                 if self._state in (STATE_PLAYING, STATE_PAUSED):
-                    self._player.set_state(gst.STATE_READY)
+                    self._player.set_state(gst.STATE_NULL)
                     self._player.set_property('uri', self._playlist[new])
                     if self._state == STATE_PAUSED:
-                        self._player.set_state(gst.STATE_READY)
+                        self._player.set_state(gst.STATE_NULL)
                         newstate = STATE_READY
                     else:
                         self._player.set_state(gst.STATE_PLAYING)
