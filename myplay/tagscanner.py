@@ -71,8 +71,7 @@ class TagScanner(object):
         if message.structure.has_name('playbin2-stream-changed'):
             uri = self._player.get_property('uri')
             if uri in self._tags:
-                self._callback(uri, self._tags[uri])
-                del self._tags[uri]
+                self._callback(uri, self._tags.pop(uri))
             if self._uris:
                 self._next()
             else:
