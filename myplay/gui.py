@@ -31,7 +31,7 @@ DND_ADD = 1
 
 COL_CURRENT = 0
 COL_URI = 1
-COL_PATH = 2
+COL_DISPLAY_PATH = 2
 COL_TITLE = 3
 COL_ARTIST = 4
 COL_ALBUM = 5
@@ -126,9 +126,10 @@ class Application(object):
             a['stop'].set_sensitive(True)
             self._play_pause_button.set_related_action(a['play'])
     
-    def _get_display_string(self, uri):
-        f = gio.File(uri=uri)
-        return f.get_path() or uri
+    def _get_path_or_uri(self, uri):
+        if uri.startswith('file://'):
+            return gio.File(uri=uri).get_path() or uri
+        return uri
     
     def _update_playlist(self, list, current):
         self._playlist_store.clear()
@@ -188,7 +189,7 @@ class Application(object):
 
     def _make_row(self, uri):
         uri = str(uri)
-        path = self._get_display_string(uri)
+        path = self._get_path_or_uri(uri)
         return [None, uri, path, path, None, None]
 
     def on_added_signal(self, uris, position):
