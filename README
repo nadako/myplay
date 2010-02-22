@@ -11,3 +11,7 @@ make it kinda different:
 
 The player is implemented as a D-BUS service utilizing GStreamer framework to do
 actual playing. It provides a D-BUS interface to modify playlist and control playing.
+
+Also, because of usage of GStreamer, this player supports network streams as well.
+
+IMPORTANT NOTE: The D-BUS API considered not stable and can be changed before version 1.0.

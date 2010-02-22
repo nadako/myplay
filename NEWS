@@ -6,6 +6,18 @@ Changes
 
  * Use "audio-volume-high" icon for window and launcher for now.
  * Add simple tags support.
+    - Changed the signature of list method: now it returns array
+      of (uri, tag_dict) tuples.
+    - Added the tag_changed(uri, tag_dict) signal. It is fired when
+      player receives new tag information about some uri.
+    - Display tags in GUI.
+ * The "add" method doesn't support -1 position anymore, use playlist length
+   instead (so it added before inexistant after-last element, just like
+   in python lists).
+ * Rename DBus exception names. Note, that the API is considered unstable before
+   version 1.0, so I can do whatever I want, hahaha :-)
+ * Add playlist row tooltip showing path to a file.
+ * Misc code fixes.
 
 0.1.0 (2010-02-22)
 ------------------

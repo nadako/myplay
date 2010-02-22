@@ -165,7 +165,7 @@ class Application(object):
 
     def on_added_signal(self, uris, position):
         first, uris = uris[0], uris[1:]
-        if position == -1:
+        if position == self._get_playlist_length():
             iter = self._playlist_store.append(self._make_row(first))
         else:
             before = self._playlist_store.get_iter((position, ))
@@ -191,7 +191,7 @@ class Application(object):
         dialog.add_button('Add', gtk.RESPONSE_OK)
         dialog.set_select_multiple(True)
         if dialog.run() == gtk.RESPONSE_OK:
-            self._player.add(dialog.get_uris(), -1)
+            self._player.add(dialog.get_uris(), self._get_playlist_length())
         dialog.destroy()
 
     def on_remove_action_activate(self, action):

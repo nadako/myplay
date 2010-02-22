@@ -28,11 +28,14 @@ from myplay.tagscanner import TagScanner
 
 GST_PLAY_FLAG_AUDIO = 1 << 1
 
-class InvalidPlaylistPosition(dbus.service.DBusException):
-    _dbus_error_name = 'org.nadako.myplay.InvalidPlaylistPosition'
+class InvalidPosition(dbus.service.DBusException):
+    _dbus_error_name = 'org.nadako.myplay.InvalidPosition'
 
-class InvalidPlaylistLength(dbus.service.DBusException):
-    _dbus_error_name = 'org.nadako.myplay.InvalidPlaylistLength'
+class InvalidLength(dbus.service.DBusException):
+    _dbus_error_name = 'org.nadako.myplay.InvalidLength'
+
+class EmptySequence(dbus.service.DBusException):
+    _dbus_error_name = 'org.nadako.myplay.EmptySequence'
 
 class Player(dbus.service.Object):
     
@@ -43,27 +46,31 @@ class Player(dbus.service.Object):
             res.append((uri, self._tags.get(uri, {})))
         return tuple(res)
     
-    @dbus.service.method(OBJECT_IFACE, in_signature='asi')
+    @dbus.service.method(OBJECT_IFACE, in_signature='asu')
     def add(self, uris, position):
-        if (position != -1) and (position < 0) or (position > len(self._playlist)):
-            raise InvalidPlaylistPosition(position)
-        if uris:
-            uris = [str(uri) for uri in uris]
-            self._playlist[position:position] = uris
-            self._save_playlist()
-            self.added(uris, position)
-            self._tag_scanner.add(uris)
+        if not uris:
+            raise EmptySequence
+        if position < 0 or position > len(self._playlist):
+            raise InvalidPosition(position)
+
+        uris = [str(uri) for uri in uris]
+        self._playlist[position:position] = uris
+        self._save_playlist()
+        self.added(uris, position)
+        self._tag_scanner.add(uris)
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def remove(self, positions):
+        if not positions:
+            raise EmptySequence
         playlist_len = len(self._playlist)
         remove_current = False
         for pos in positions:
-            if (pos < 0) or (pos >= playlist_len):
-                raise InvalidPlaylistPosition(pos)
+            if pos < 0 or pos >= playlist_len:
+                raise InvalidPosition(pos)
             if pos == self._current:
                 remove_current = True
-        self._playlist = [uri for i, uri in enumerate(self._playlist) if i not in positions]
+        self._playlist[:] = [uri for i, uri in enumerate(self._playlist) if i not in positions]
         self._save_playlist()
         self.removed(positions)
         if remove_current:
@@ -79,13 +86,15 @@ class Player(dbus.service.Object):
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def reorder(self, positions):
+        if not positions:
+            raise EmptySequence
         playlist_len = len(self._playlist)
         if len(positions) != playlist_len:
-            raise InvalidPlaylistLength(self._playlist)
+            raise InvalidLength(self._playlist)
         new_playlist = []
         for pos in positions:
-            if (pos < 0) or (pos >= playlist_len):
-                raise InvalidPlaylistPosition(pos)
+            if pos < 0 or pos >= playlist_len:
+                raise InvalidPosition(pos)
             new_playlist.append(self._playlist[pos])
         self._playlist[:] = new_playlist
         self._save_playlist()
@@ -98,7 +107,7 @@ class Player(dbus.service.Object):
     @dbus.service.method(OBJECT_IFACE, in_signature='i')
     def set_current(self, position):
         if (position != CURRENT_UNSET) and (position < 0 or position >= len(self._playlist)):
-            raise InvalidPlaylistPosition()
+            raise InvalidPosition()
         self._change_current(position)
     
     @dbus.service.method(OBJECT_IFACE)
@@ -166,7 +175,7 @@ class Player(dbus.service.Object):
         pass
 
     @dbus.service.signal(OBJECT_IFACE, signature='sa{ss}')
-    def tag_changed(self, uri, tag):
+    def tag_changed(self, uri, tag_dict):
         pass
 
     def __init__(self, idle_callback=None):
