@@ -5,7 +5,7 @@ Changes
 ------------------
 
  * Use "audio-volume-high" icon for window and launcher for now.
-
+ * Add simple tags support.
 
 0.1.0 (2010-02-22)
 ------------------

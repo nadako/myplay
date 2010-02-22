@@ -24,6 +24,7 @@ import gst
 from xdg.BaseDirectory import save_data_path
 
 from myplay.common import OBJECT_IFACE, CURRENT_UNSET, STATE_READY, STATE_PLAYING, STATE_PAUSED
+from myplay.tagscanner import TagScanner
 
 GST_PLAY_FLAG_AUDIO = 1 << 1
 
@@ -35,18 +36,23 @@ class InvalidPlaylistLength(dbus.service.DBusException):
 
 class Player(dbus.service.Object):
     
-    @dbus.service.method(OBJECT_IFACE, out_signature='as')
+    @dbus.service.method(OBJECT_IFACE, out_signature='a(sa{ss})')
     def list(self):
-        return tuple(self._playlist)
+        res = []
+        for uri in self._playlist:
+            res.append((uri, self._tags.get(uri, {})))
+        return tuple(res)
     
     @dbus.service.method(OBJECT_IFACE, in_signature='asi')
     def add(self, uris, position):
         if (position != -1) and (position < 0) or (position > len(self._playlist)):
             raise InvalidPlaylistPosition(position)
         if uris:
-            self._playlist[position:position] = [str(uri) for uri in uris]
+            uris = [str(uri) for uri in uris]
+            self._playlist[position:position] = uris
             self._save_playlist()
             self.added(uris, position)
+            self._tag_scanner.add(uris)
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def remove(self, positions):
@@ -159,11 +165,20 @@ class Player(dbus.service.Object):
     def state_changed(self, old_state, new_state):
         pass
 
+    @dbus.service.signal(OBJECT_IFACE, signature='sa{ss}')
+    def tag_changed(self, uri, tag):
+        pass
+
     def __init__(self, idle_callback=None):
         super(Player, self).__init__()
         
+        self._tag_scanner = TagScanner(self._on_tag_scanned)
+        self._tags = {}
+        
         self._playlist_path = os.path.join(save_data_path('myplay'), 'playlist')
         self._init_playlist()
+        if self._playlist:
+            self._tag_scanner.add(self._playlist)
         
         self._player = gst.element_factory_make('playbin2', 'player')
         self._player.set_property('flags', GST_PLAY_FLAG_AUDIO)
@@ -174,6 +189,11 @@ class Player(dbus.service.Object):
         self._state = STATE_READY
         self._idle_callback = idle_callback
         self.idle = True
+    
+    def _on_tag_scanned(self, uri, tag):
+        if not (uri in self._tags and self._tags[uri] == tag):
+            self._tags[uri] = tag
+            self.tag_changed(uri, tag)
     
     @apply
     def idle():

@@ -21,6 +21,7 @@ import dbus.mainloop.glib
 import os
 import gio
 import gtk
+import gst
 
 from myplay.common import BUS_NAME, OBJECT_IFACE, OBJECT_PATH
 from myplay.common import STATE_READY, STATE_PLAYING, STATE_PAUSED, CURRENT_UNSET
@@ -41,6 +42,7 @@ class Application(object):
         bus.add_signal_receiver(self.on_reordered_signal, 'reordered', OBJECT_IFACE)
         bus.add_signal_receiver(self.on_current_changed_signal, 'current_changed', OBJECT_IFACE)
         bus.add_signal_receiver(self.on_state_changed_signal, 'state_changed', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_tag_changed_signal, 'tag_changed', OBJECT_IFACE)
         
         builder = gtk.Builder()
         builder.add_from_file(os.path.join(os.path.dirname(__file__), 'gui.ui'))
@@ -101,12 +103,15 @@ class Application(object):
         f = gio.File(uri=uri)
         return f.get_path() or uri
     
-    def _update_playlist(self, uris, current):
+    def _update_playlist(self, list, current):
         self._playlist_store.clear()
-        for i, uri in enumerate(uris):
-            current = (i == current)
-            uri = self._get_display_string(str(uri))
-            self._playlist_store.append((current, uri))
+        for i, (uri, tags) in enumerate(list):
+            row = self._make_row(uri)
+            row[0] = (i == current) and 'gtk-media-play' or None
+            row[3] = tags.get(gst.TAG_TITLE) or row[3]
+            row[4] = tags.get(gst.TAG_ARTIST)
+            row[5] = tags.get(gst.TAG_ALBUM)
+            self._playlist_store.append(row)
 
     def _get_playlist_length(self):
         return self._playlist_store.iter_n_children(None)
@@ -136,22 +141,37 @@ class Application(object):
     def quit(self):
         gtk.main_quit()
 
+    def on_tag_changed_signal(self, uri, tag):
+        def func(model, path, iter):
+            if model.get(iter, 1)[0] == uri:
+                cols = (
+                    3, tag.get(gst.TAG_TITLE),
+                    4, tag.get(gst.TAG_ARTIST),
+                    5, tag.get(gst.TAG_ALBUM),
+                )
+                model.set(iter, *cols)
+        self._playlist_store.foreach(func)
+
     def on_state_changed_signal(self, old_state, new_state):
         self._update_state(new_state)
     
     def on_current_changed_signal(self, old_current, new_current):
         self._set_current(new_current)
 
+    def _make_row(self, uri):
+        uri = str(uri)
+        path = self._get_display_string(uri)
+        return [None, uri, path, path, None, None]
+
     def on_added_signal(self, uris, position):
         first, uris = uris[0], uris[1:]
         if position == -1:
-            iter = self._playlist_store.append((None, first))
+            iter = self._playlist_store.append(self._make_row(first))
         else:
             before = self._playlist_store.get_iter((position, ))
-            iter = self._playlist_store.insert_before(before, (None, first))
+            iter = self._playlist_store.insert_before(before, self._make_row(first))
         for uri in uris:
-            s = self._get_display_string(uri)
-            iter = self._playlist_store.insert_after(iter, (None, s))
+            iter = self._playlist_store.insert_after(iter, self._make_row(uri))
     
     def on_removed_signal(self, positions):
         iters = []
@@ -216,7 +236,7 @@ class Application(object):
             position = -1
 
         if info == DND_REODER:
-            positions = range(self._playlist_store.iter_n_children(None))
+            positions = range(self._get_playlist_length())
             moved = [int(i) for i in selection.data.split(' ')]
             for p in moved:
                 positions[p] = None
