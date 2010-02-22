@@ -24,7 +24,7 @@ import gobject
 from myplay.common import BUS_NAME, OBJECT_PATH
 from myplay.player import Player
 
-IDLE_TIMEOUT = 500
+IDLE_TIMEOUT = 5
 
 class Application(object):
     
