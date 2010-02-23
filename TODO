@@ -7,3 +7,5 @@ Things to be done:
  * add command-line interface
  * add file accociations
  * try to support legacy ID3 encodings mis-usage
+ * document D-BUS API when it will become stable
+ * add tests
