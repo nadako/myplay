@@ -1,0 +1,8 @@
+diff -Nur -x '*.orig' -x '*~' myplay-0.1.0/data/org.nadako.myplay.service myplay-0.1.0.new/data/org.nadako.myplay.service
+--- myplay-0.1.0/data/org.nadako.myplay.service	2010-02-22 00:07:46.000000000 +0300
++++ myplay-0.1.0.new/data/org.nadako.myplay.service	2010-02-22 00:44:27.573134644 +0300
+@@ -1,3 +1,3 @@
+ [D-BUS Service]
+ Name=org.nadako.myplay
+-Exec=/usr/local/bin/myplay-service
++Exec=/usr/lib/myplay/myplay-service

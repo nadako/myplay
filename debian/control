@@ -1,0 +1,19 @@
+Source: myplay
+Section: sound
+Priority: optional
+Maintainer: Dan Korostelev <nadako@gmail.com>
+Build-Depends: cdbs, debhelper (>= 7), python, python-setuptools, python-support
+Standards-Version: 3.8.4
+Homepage: http://code.google.com/p/myplay/
+
+Package: myplay
+Architecture: all
+Depends: python-dbus, python-gobject, python-gst0.10, python-gtk2, python-xdg, ${python:Depends}, ${misc:Depends}
+Description: simple music playing service
+ MyPlay is a very simple music player service
+ intended for playing music on background.
+ .
+ It's based on GStreamer framework and uses
+ D-BUS for providing controls. A simple GTK+
+ based interface is provided to control playing
+ and managing playlist.

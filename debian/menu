@@ -1,0 +1,2 @@
+?package(myplay):needs="X11" section="Applications/Sound"\
+  title="myplay" command="/usr/bin/myplay"

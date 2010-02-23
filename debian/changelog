@@ -1,0 +1,5 @@
+myplay (0.2.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Dan Korostelev <nadako@gmail.com>  Tue, 23 Feb 2010 14:15:16 +0300
