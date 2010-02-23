@@ -60,7 +60,7 @@ class Player(dbus.service.Object):
         add_info = [(uri, self._tags.get(uri, {})) for uri in uris]
         self.added(add_info, position)
 
-        no_tags = [uri for uri in uris if uri not in self._tags]
+        no_tags = [uri for uri, tag in add_info if not tag]
         if no_tags:
             self._tag_scanner.add(no_tags)
     
@@ -69,19 +69,16 @@ class Player(dbus.service.Object):
         if not positions:
             raise EmptySequence
         playlist_len = len(self._playlist)
-        remove_current = False
         for pos in positions:
             if pos < 0 or pos >= playlist_len:
                 raise InvalidPosition(pos)
-            if pos == self._current:
-                remove_current = True
+
         self._playlist[:] = [uri for i, uri in enumerate(self._playlist) if i not in positions]
         self._save_playlist()
         self.removed(positions)
-        if remove_current:
+
+        if self._current in positions:
             self.set_current(CURRENT_UNSET)
-            if self._state == STATE_PLAYING:
-                self.stop()
     
     @dbus.service.method(OBJECT_IFACE)
     def clear(self):
@@ -89,8 +86,6 @@ class Player(dbus.service.Object):
         self._save_playlist()
         self.cleared()
         self.set_current(CURRENT_UNSET)
-        if self._state == STATE_PLAYING:
-            self.stop()
     
     @dbus.service.method(OBJECT_IFACE, in_signature='au')
     def reorder(self, positions):
@@ -99,43 +94,49 @@ class Player(dbus.service.Object):
         playlist_len = len(self._playlist)
         if len(positions) != playlist_len:
             raise InvalidLength(self._playlist)
+
         new_playlist = []
         for pos in positions:
             if pos < 0 or pos >= playlist_len:
                 raise InvalidPosition(pos)
             new_playlist.append(self._playlist[pos])
+
         self._playlist[:] = new_playlist
         self._save_playlist()
+
         self.reordered(positions)
     
+        if self._current != CURRENT_UNSET:
+            self._change_current(positions.index(self._current), True)
+
     @dbus.service.method(OBJECT_IFACE, out_signature='i')
     def get_current(self):
         return self._current
     
     @dbus.service.method(OBJECT_IFACE, in_signature='i')
     def set_current(self, position):
-        if (position != CURRENT_UNSET) and (position < 0 or position >= len(self._playlist)):
+        if position != CURRENT_UNSET and (position < 0 or position >= len(self._playlist)):
             raise InvalidPosition()
-        self._change_current(position)
+        self._change_current(int(position))
     
     @dbus.service.method(OBJECT_IFACE)
     def next(self):
-        if (self._current != CURRENT_UNSET) and self._current != (len(self._playlist) - 1):
+        if self._current != CURRENT_UNSET and not self._current_is_last():
             self._change_current(self._current + 1)
     
     @dbus.service.method(OBJECT_IFACE)
     def previous(self):
-        if (self._current != CURRENT_UNSET) and (self._current != 0):
+        if self._current != CURRENT_UNSET and not self._current_is_first():
             self._change_current(self._current - 1)
     
     @dbus.service.method(OBJECT_IFACE)
     def play(self):
-        if self._state in (STATE_READY, STATE_PAUSED):
+        if self._state != STATE_PLAYING:
             if self._state == STATE_READY:
                 self._player.set_property('uri', self._playlist[self._current])
             self._player.set_state(gst.STATE_PLAYING)
             self._change_state(STATE_PLAYING)
-    
+
     @dbus.service.method(OBJECT_IFACE, in_signature='u')
     def set_current_and_play(self, position):
         self.set_current(position)
@@ -149,7 +150,7 @@ class Player(dbus.service.Object):
     
     @dbus.service.method(OBJECT_IFACE)
     def stop(self):
-        if self._state in (STATE_PLAYING, STATE_PAUSED):
+        if self._state != STATE_READY:
             self._player.set_state(gst.STATE_NULL)
             self._player.set_property('uri', '')
             self._change_state(STATE_READY)
@@ -201,17 +202,12 @@ class Player(dbus.service.Object):
         self._player.set_property('flags', GST_PLAY_FLAG_AUDIO)
         player_bus = self._player.get_bus()
         player_bus.add_signal_watch()
-        player_bus.connect('message', self.on_player_message)
+        player_bus.connect('message', self._on_player_message)
 
         self._state = STATE_READY
         self._idle_callback = idle_callback
         self.idle = True
-    
-    def _on_tag_scanned(self, uri, tag):
-        if not (uri in self._tags and self._tags[uri] == tag):
-            self._tags[uri] = tag
-            self.tag_changed(uri, tag)
-    
+
     @apply
     def idle():
         def fget(self):
@@ -221,15 +217,26 @@ class Player(dbus.service.Object):
             if self._idle_callback is not None:
                 self._idle_callback(self, value)
         return property(fget, fset)
+
+    def _current_is_last(self):
+        return self._current == (len(self._playlist) - 1)
+
+    def _current_is_first(self):
+        return self._current == 0
     
-    def on_player_message(self, element, message):
+    def _on_player_message(self, element, message):
         t = message.type
         if t == gst.MESSAGE_EOS:
-            if self._current != (len(self._playlist) - 1):
+            if not self._current_is_last():
                 self.next()
             else:
                 self.stop()
 
+    def _on_tag_scanned(self, uri, tag):
+        if not (uri in self._tags and self._tags[uri] == tag):
+            self._tags[uri] = tag
+            self.tag_changed(uri, tag)
+    
     def _init_playlist(self):
         self._playlist = []
         self._current = CURRENT_UNSET
@@ -258,24 +265,17 @@ class Player(dbus.service.Object):
             else:
                 self.idle = False
 
-    def _change_current(self, new):
+    def _change_current(self, new, reorder=False):
         old = self._current
-        if new != old:
-            newstate = None
-            if new == CURRENT_UNSET:
-                self._player.set_state(gst.STATE_NULL)
-                self._player.set_property('uri', '')
-            else:
-                if self._state in (STATE_PLAYING, STATE_PAUSED):
-                    self._player.set_state(gst.STATE_NULL)
-                    self._player.set_property('uri', self._playlist[new])
-                    if self._state == STATE_PAUSED:
-                        self._player.set_state(gst.STATE_NULL)
-                        newstate = STATE_READY
-                    else:
-                        self._player.set_state(gst.STATE_PLAYING)
-            self._current = int(new)
+        if old != new:
+            self._current = new
             self._save_playlist()
             self.current_changed(old, new)
-            if newstate is not None:
-                self._change_state(newstate)
+            if not reorder:
+                if self._state == STATE_PAUSED or new == CURRENT_UNSET:
+                    self.stop()
+                elif self._state == STATE_PLAYING:
+                    # reset player without changing player state
+                    self._player.set_state(gst.STATE_NULL)
+                    self._player.set_property('uri', self._playlist[new])
+                    self._player.set_state(gst.STATE_PLAYING)

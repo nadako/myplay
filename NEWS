@@ -21,6 +21,7 @@ Changes
    version 1.0, so I can do whatever I want, hahaha :-)
  * Add playlist row tooltip showing path to a file.
  * Support removing tracks from playlist using Delete key.
+ * Fix a bug with wrong "current track" after reordering.
  * Misc code and GUI fixes.
 
 0.1.0 (2010-02-22)
