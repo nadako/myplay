@@ -111,7 +111,7 @@ class Application(object):
     def _update_state(self, state):
         a = self._actions
         if state == STATE_READY:
-            a['play'].set_sensitive(True)
+            a['play'].set_sensitive(bool(self._get_playlist_length()))
             a['pause'].set_sensitive(False)
             a['stop'].set_sensitive(False)
             self._play_pause_button.set_related_action(a['play'])
@@ -201,6 +201,8 @@ class Application(object):
             iter = self._playlist_store.insert_before(before, self._make_row(*first))
         for track in tracks:
             iter = self._playlist_store.insert_after(iter, self._make_row(*track))
+        if self._player.get_state() != STATE_PLAYING:
+            self._actions['play'].set_sensitive(True)
     
     def on_removed_signal(self, positions):
         iters = []
@@ -208,9 +210,12 @@ class Application(object):
             iters.append(self._playlist_store.get_iter((pos, )))
         for iter in iters:
             self._playlist_store.remove(iter)
+        if not self._get_playlist_length():
+            self._actions['play'].set_sensitive(False)
     
     def on_cleared_signal(self):
         self._playlist_store.clear()
+        self._actions['play'].set_sensitive(False)
     
     def on_reordered_signal(self, positions):
         self._playlist_store.reorder([int(p) for p in positions])

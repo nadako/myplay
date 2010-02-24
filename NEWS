@@ -4,6 +4,7 @@ Changes
 0.3.0 (unreleased)
 ------------------
 
+ * Disable play button in GUI when playlist is empty.
  * When playing, automatically set first track to current if it's unset.
  * Don't play last track if current is unset, do nothing instead.
  * Misc code fixes.
