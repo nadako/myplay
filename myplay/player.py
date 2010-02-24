@@ -133,7 +133,10 @@ class Player(dbus.service.Object):
     def play(self):
         if self._state != STATE_PLAYING:
             if self._current == CURRENT_UNSET:
-                self._change_current(0)
+                if self._playlist:
+                    self._change_current(0)
+                else:
+                    return
             if self._state == STATE_READY:
                 self._player.set_property('uri', self._playlist[self._current])
             self._player.set_state(gst.STATE_PLAYING)
@@ -221,6 +224,9 @@ class Player(dbus.service.Object):
         return property(fget, fset)
 
     def _current_is_last(self):
+        if not self._playlist:
+            # check so this function won't return True on empty playlist 
+            return False
         return self._current == (len(self._playlist) - 1)
 
     def _current_is_first(self):

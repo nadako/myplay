@@ -4,7 +4,9 @@ Changes
 0.3.0 (unreleased)
 ------------------
 
- * When playing, automatically set first track to current if it's unset. 
+ * When playing, automatically set first track to current if it's unset.
+ * Don't play last track if current is unset, do nothing instead.
+ * Misc code fixes.
 
 0.2.0 (2010-02-23)
 ------------------
