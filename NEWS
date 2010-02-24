@@ -1,7 +1,7 @@
 Changes
 =======
 
-0.3.0 (unreleased)
+0.2.1 (2010-02-25)
 ------------------
 
  * Disable play button in GUI when playlist is empty.
