@@ -132,6 +132,8 @@ class Player(dbus.service.Object):
     @dbus.service.method(OBJECT_IFACE)
     def play(self):
         if self._state != STATE_PLAYING:
+            if self._current == CURRENT_UNSET:
+                self._change_current(0)
             if self._state == STATE_READY:
                 self._player.set_property('uri', self._playlist[self._current])
             self._player.set_state(gst.STATE_PLAYING)
