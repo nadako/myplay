@@ -6,6 +6,5 @@ Things to be done:
  * add file accociations
  * try to support legacy ID3 encodings mis-usage
  * add tests (check out the DBUS test runner thing)
-
- * implement and migrate to MPRIS specification instead of own interface
-   (see http://wiki.xmms2.xmms.se/wiki/MPRIS)
+ * document D-BUS API when it will become stable
+ * implement MPRIS specification 
