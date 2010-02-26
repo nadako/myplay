@@ -20,8 +20,8 @@ import os
 import cPickle as pickle
 
 import dbus.service
+import glib
 import gst
-from xdg.BaseDirectory import save_data_path
 
 from myplay.common import OBJECT_IFACE, CURRENT_UNSET, STATE_READY, STATE_PLAYING, STATE_PAUSED
 from myplay.tagscanner import TagScanner
@@ -198,7 +198,12 @@ class Player(dbus.service.Object):
         self._tag_scanner = TagScanner(self._on_tag_scanned)
         self._tags = {}
         
-        self._playlist_path = os.path.join(save_data_path('myplay'), 'playlist')
+        data_dir = os.path.join(glib.get_user_data_dir(), 'myplay')
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        
+        self._playlist_path = os.path.join(data_dir, 'playlist')
+
         self._init_playlist()
         if self._playlist:
             self._tag_scanner.add(self._playlist)

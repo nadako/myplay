@@ -8,7 +8,7 @@ Homepage: http://code.google.com/p/myplay/
 
 Package: myplay
 Architecture: all
-Depends: python-dbus, python-gobject, python-gst0.10, python-gtk2, python-xdg, ${python:Depends}, ${misc:Depends}
+Depends: python-dbus, python-gobject, python-gst0.10, python-gtk2, ${python:Depends}, ${misc:Depends}
 Description: simple music playing service
  MyPlay is a very simple music player service
  intended for playing music on background.
