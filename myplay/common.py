@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with MyPlay.  If not, see <http://www.gnu.org/licenses/>.
 #
-BUS_NAME = 'org.nadako.myplay'
+BUS_NAME = 'org.nadako.MyPlay'
 OBJECT_IFACE = 'org.nadako.myplay.Player'
-OBJECT_PATH = '/org/nadako/myplay/Player'
+OBJECT_PATH = '/org/nadako/myplay/player'
 
 STATE_READY = 0
 STATE_PLAYING = 1

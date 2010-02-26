@@ -46,13 +46,13 @@ class Application(object):
         bus = dbus.SessionBus()
         proxy = bus.get_object(BUS_NAME, OBJECT_PATH, follow_name_owner_changes=True)
         self._player = dbus.Interface(proxy, OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_added_signal, 'added', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_removed_signal, 'removed', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_cleared_signal, 'cleared', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_reordered_signal, 'reordered', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_current_changed_signal, 'current_changed', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_state_changed_signal, 'state_changed', OBJECT_IFACE)
-        bus.add_signal_receiver(self.on_tag_changed_signal, 'tag_changed', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_added_signal, 'Added', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_removed_signal, 'Removed', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_cleared_signal, 'Cleared', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_reordered_signal, 'Reordered', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_current_changed_signal, 'CurrentChanged', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_state_changed_signal, 'StateChanged', OBJECT_IFACE)
+        bus.add_signal_receiver(self.on_tag_changed_signal, 'TagChanged', OBJECT_IFACE)
         
         builder = gtk.Builder()
         builder.add_from_file(os.path.join(os.path.dirname(__file__), 'gui.ui'))
@@ -151,9 +151,10 @@ class Application(object):
         if self._window_config['maximized']:
             self._window.maximize()
 
-        self._update_state(self._player.get_state())
-        self._update_playlist(self._player.list(), self._player.get_current())
-        self._set_current(self._player.get_current())
+        self._update_state(self._player.GetState())
+        current = self._player.GetCurrent()
+        self._update_playlist(self._player.List(), current)
+        self._set_current(current)
 
     def _update_clear_button(self, *args):
         if self._get_playlist_length():
@@ -254,7 +255,7 @@ class Application(object):
             iter = self._playlist_store.insert_before(before, self._make_row(*first))
         for track in tracks:
             iter = self._playlist_store.insert_after(iter, self._make_row(*track))
-        if self._player.get_state() != STATE_PLAYING:
+        if self._player.GetState() != STATE_PLAYING:
             self._actions['play'].set_sensitive(True)
     
     def on_removed_signal(self, positions):
@@ -279,35 +280,35 @@ class Application(object):
         dialog.set_select_multiple(True)
         dialog.set_local_only(False)
         if dialog.run() == gtk.RESPONSE_OK:
-            self._player.add(dialog.get_uris(), self._get_playlist_length())
+            self._player.Add(dialog.get_uris(), self._get_playlist_length())
         dialog.destroy()
 
     def on_remove_action_activate(self, action):
         selection = self._playlist_view.get_selection()
         paths = selection.get_selected_rows()[1]
         if paths:
-            self._player.remove([i[0] for i in paths])
+            self._player.Remove([i[0] for i in paths])
 
     def on_clear_action_activate(self, action):
-        self._player.clear()
+        self._player.Clear()
 
     def on_previous_action_activate(self, action):
-        self._player.previous()
+        self._player.Previous()
     
     def on_next_action_activate(self, action):
-        self._player.next()
+        self._player.Next()
 
     def on_play_action_activate(self, action):
-        self._player.play()
+        self._player.Play()
 
     def on_pause_action_activate(self, action):
-        self._player.pause()
+        self._player.Pause()
 
     def on_stop_action_activate(self, action):
-        self._player.stop()
+        self._player.Stop()
 
     def on_playlist_view_row_activated(self, view, path, column):
-        self._player.set_current_and_play(path[0])
+        self._player.SetCurrentAndPlay(path[0])
 
     def on_playlist_view_key_press_event(self, view, event):
         if gtk.gdk.keyval_name(event.keyval) == 'Delete':
@@ -337,9 +338,9 @@ class Application(object):
                 positions[p] = None
             positions[position:position] =  moved
             positions = [p for p in positions if p is not None]
-            self._player.reorder(positions)
+            self._player.Reorder(positions)
         elif info == DND_ADD:
-            self._player.add(selection.get_uris(), position)
+            self._player.Add(selection.get_uris(), position)
 
     def on_main_window_configure_event(self, window, event):
         if not self._window_config['maximized']:

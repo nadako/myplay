@@ -6,6 +6,8 @@ Changes
 
  * Save GUI window size, position and maximized state.
  * Drop python-xdg dependency and use glib functions instead.
+ * Follow D-BUS naming conventions (case changed in names of D-BUS methods,
+   signals, object path and well-known bus name).
 
 0.2.1 (2010-02-25)
 ------------------
