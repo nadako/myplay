@@ -1,11 +1,9 @@
 Things to be done:
 
  * handle errors: bad uri's, broken streams, d-bus problems etc.
- * improve GUI:
-  - save window size and position
-  - support simple command-line parameters
+ * improve GUI: support simple command-line parameters
  * add command-line interface
  * add file accociations
  * try to support legacy ID3 encodings mis-usage
  * document D-BUS API when it will become stable
- * add tests
+ * add tests (check out the DBUS test runner thing)

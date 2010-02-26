@@ -16,10 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with MyPlay.  If not, see <http://www.gnu.org/licenses/>.
 #
+import ConfigParser
+
 import dbus
 import dbus.mainloop.glib
 import os
 import gio
+import glib
 import gtk
 import gst
 
@@ -89,6 +92,12 @@ class Application(object):
             'clear': builder.get_object('clear_action'),
         }
 
+        config_dir = os.path.join(glib.get_user_config_dir(), 'myplay')
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+
+        self._window_config_path = os.path.join(config_dir, 'window.cfg')
+
         self._initialize_ui()
 
     def on_selection_changed(self, selection):
@@ -97,7 +106,51 @@ class Application(object):
         else:
             self._actions['remove'].set_sensitive(False)
     
+    def _load_window_config(self):
+        self._window_config = {
+            'x': 0,
+            'y': 0,
+            'width': 500,
+            'height': 600,
+            'maximized': False
+        }
+
+        if os.path.exists(self._window_config_path):
+            cp = ConfigParser.RawConfigParser()
+            cp.read(self._window_config_path)
+            if cp.has_section('window'):
+                try:
+                    x = cp.getint('window', 'x')
+                    y = cp.getint('window', 'y')
+                    width = cp.getint('window', 'width')
+                    height = cp.getint('window', 'height')
+                    maximized = cp.getboolean('window', 'maximized')
+                except:
+                    pass
+                else:
+                    self._window_config['x'] = x
+                    self._window_config['y'] = y
+                    self._window_config['width'] = width
+                    self._window_config['height'] = height
+                    self._window_config['maximized'] = maximized
+    
+    def _save_window_config(self):
+        cp = ConfigParser.RawConfigParser()
+        cp.add_section('window')
+        cp.set('window', 'x', self._window_config['x'])
+        cp.set('window', 'y', self._window_config['y'])
+        cp.set('window', 'width', self._window_config['width'])
+        cp.set('window', 'height', self._window_config['height'])
+        cp.set('window', 'maximized', self._window_config['maximized'])
+        cp.write(open(self._window_config_path, 'w'))
+    
     def _initialize_ui(self):
+        self._load_window_config()
+        self._window.move(self._window_config['x'], self._window_config['y'])
+        self._window.set_default_size(self._window_config['width'], self._window_config['height'])
+        if self._window_config['maximized']:
+            self._window.maximize()
+
         self._update_state(self._player.get_state())
         self._update_playlist(self._player.list(), self._player.get_current())
         self._set_current(self._player.get_current())
@@ -288,7 +341,18 @@ class Application(object):
         elif info == DND_ADD:
             self._player.add(selection.get_uris(), position)
 
+    def on_main_window_configure_event(self, window, event):
+        if not self._window_config['maximized']:
+            self._window_config['x'] = event.x
+            self._window_config['y'] = event.y
+            self._window_config['width'] = event.width
+            self._window_config['height'] = event.height
+    
+    def on_main_window_state_event(self, window, event):
+        self._window_config['maximized'] = bool(event.new_window_state & gtk.gdk.WINDOW_STATE_MAXIMIZED)
+        
     def on_main_window_destroy(self, window):
+        self._save_window_config()
         self.quit()
 
 def main():

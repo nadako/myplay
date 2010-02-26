@@ -20,10 +20,10 @@
   </object>
   <object class="GtkWindow" id="main_window">
     <property name="title" translatable="yes">MyPlay</property>
-    <property name="default_width">500</property>
-    <property name="default_height">600</property>
     <property name="icon_name">audio-volume-high</property>
     <signal name="destroy" handler="on_main_window_destroy"/>
+    <signal name="configure_event" handler="on_main_window_configure_event"/>
+    <signal name="window_state_event" handler="on_main_window_state_event"/>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -35,8 +35,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton1">
                 <property name="visible">True</property>
-                <property name="related_action">previous_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">previous_action</property>
                 <property name="label" translatable="yes">toolbutton1</property>
                 <property name="use_underline">True</property>
               </object>
@@ -48,8 +48,8 @@
             <child>
               <object class="GtkToolButton" id="play_pause_button">
                 <property name="visible">True</property>
-                <property name="related_action">play_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">play_action</property>
                 <property name="label" translatable="yes">toolbutton4</property>
                 <property name="use_underline">True</property>
               </object>
@@ -61,8 +61,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton2">
                 <property name="visible">True</property>
-                <property name="related_action">next_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">next_action</property>
                 <property name="label" translatable="yes">toolbutton2</property>
                 <property name="use_underline">True</property>
               </object>
@@ -83,8 +83,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton3">
                 <property name="visible">True</property>
-                <property name="related_action">stop_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">stop_action</property>
                 <property name="label" translatable="yes">toolbutton3</property>
                 <property name="use_underline">True</property>
               </object>
@@ -173,8 +173,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton6">
                 <property name="visible">True</property>
-                <property name="related_action">add_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">add_action</property>
                 <property name="is_important">True</property>
                 <property name="label" translatable="yes">toolbutton6</property>
                 <property name="use_underline">True</property>
@@ -187,8 +187,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton7">
                 <property name="visible">True</property>
-                <property name="related_action">remove_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">remove_action</property>
                 <property name="is_important">True</property>
                 <property name="label" translatable="yes">toolbutton7</property>
                 <property name="use_underline">True</property>
@@ -213,8 +213,8 @@
             <child>
               <object class="GtkToolButton" id="toolbutton8">
                 <property name="visible">True</property>
-                <property name="related_action">clear_action</property>
                 <property name="use_action_appearance">True</property>
+                <property name="related_action">clear_action</property>
                 <property name="is_important">True</property>
                 <property name="label" translatable="yes">toolbutton8</property>
                 <property name="use_underline">True</property>

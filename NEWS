@@ -4,6 +4,7 @@ Changes
 0.3.0 (unreleased)
 ------------------
 
+ * Save GUI window size, position and maximized state.
  * Drop python-xdg dependency and use glib functions instead.
 
 0.2.1 (2010-02-25)
