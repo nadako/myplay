@@ -308,7 +308,7 @@ class Application(object):
         self._player.Stop()
 
     def on_playlist_view_row_activated(self, view, path, column):
-        self._player.SetCurrentAndPlay(path[0])
+        self._player.SetCurrent(path[0], True)
 
     def on_playlist_view_key_press_event(self, view, event):
         if gtk.gdk.keyval_name(event.keyval) == 'Delete':

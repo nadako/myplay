@@ -112,13 +112,16 @@ class Player(dbus.service.Object):
     @dbus.service.method(OBJECT_IFACE, out_signature='i')
     def GetCurrent(self):
         return self._current
-    
-    @dbus.service.method(OBJECT_IFACE, in_signature='i')
-    def SetCurrent(self, position):
-        if position != CURRENT_UNSET and (position < 0 or position >= len(self._playlist)):
-            raise InvalidPosition()
+
+    @dbus.service.method(OBJECT_IFACE, in_signature='ib')
+    def SetCurrent(self, position, play=False):
+        if position < 0 or position >= len(self._playlist):
+            if not (position == CURRENT_UNSET and not play):
+                raise InvalidPosition()
         self._change_current(int(position))
-    
+        if play:
+            self.Play()
+
     @dbus.service.method(OBJECT_IFACE)
     def Next(self):
         if self._current != CURRENT_UNSET and not self._current_is_last():
@@ -141,11 +144,6 @@ class Player(dbus.service.Object):
                 self._player.set_property('uri', self._playlist[self._current])
             self._player.set_state(gst.STATE_PLAYING)
             self._change_state(STATE_PLAYING)
-
-    @dbus.service.method(OBJECT_IFACE, in_signature='u')
-    def SetCurrentAndPlay(self, position):
-        self.SetCurrent(position)
-        self.Play()
 
     @dbus.service.method(OBJECT_IFACE)
     def Pause(self):

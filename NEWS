@@ -8,6 +8,8 @@ Changes
  * Drop python-xdg dependency and use glib functions instead.
  * Follow D-BUS naming conventions (case changed in names of D-BUS methods,
    signals, object path and well-known bus name).
+ * Remove set_current_and_play D-BUS method, instead SetCurrent now requires
+   a second, boolean argument which defines whether to play the track.
 
 0.2.1 (2010-02-25)
 ------------------
