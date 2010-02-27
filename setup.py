@@ -51,7 +51,7 @@ setup(
     },
     include_package_data=True,
     data_files=[
-        ('share/dbus-1/services', ['data/org.nadako.myplay.service']),
+        ('share/dbus-1/services', ['data/org.nadako.MyPlay.service']),
         ('share/applications', ['data/myplay.desktop']),
     ]
 )
