@@ -17,12 +17,8 @@
 # along with MyPlay.  If not, see <http://www.gnu.org/licenses/>.
 #
 import gst
-import gobject
 
-
-USED_TAGS = set([gst.TAG_TITLE, gst.TAG_ARTIST, gst.TAG_ALBUM])
-GST_PLAY_FLAG_AUDIO = 1 << 1
-
+USED_TAGS = (gst.TAG_TITLE, gst.TAG_ARTIST, gst.TAG_ALBUM)
 
 class TagScanner(object):
     """Asynchronous tag scanner
@@ -44,50 +40,40 @@ class TagScanner(object):
         self._tags = {}
         self._idle = True
         self._callback = callback
-
         self._player = gst.element_factory_make('playbin2')
-        self._player.set_property('flags', GST_PLAY_FLAG_AUDIO)
-        self._player.set_property('audio-sink', gst.element_factory_make('fakesink'))
+        self._player.get_bus().add_watch(self._bus_watch_cb)
 
-        bus = self._player.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::tag', self._on_tag_message)
-        bus.connect('message::element', self._on_element_message)
+    def _bus_watch_cb(self, bus, message):
+        if message.type == gst.MESSAGE_TAG:
+            taglist = message.parse_tag()
+            for key in taglist.keys():
+                if key in USED_TAGS:
+                    self._tags[key] = taglist[key]
+        elif message.type == gst.MESSAGE_STATE_CHANGED:
+            old, new, pending = message.parse_state_changed()
+            if old == gst.STATE_READY and new == gst.STATE_PAUSED and pending == gst.STATE_PLAYING:
+                self._finish_current()
+        elif message.type in (gst.MESSAGE_ERROR, gst.MESSAGE_EOS):
+            self._finish_current()
+        return True
 
-    def _check_uri(self, uri):
+    def _finish_current(self):
+        if self._tags:
+            self._callback(self._player.props.uri, self._tags)
+            self._tags = {}
+
         self._player.set_state(gst.STATE_NULL)
-        self._player.set_property('uri', uri)
-        self._player.set_state(gst.STATE_PAUSED)
-
-    def _on_tag_message(self, bus, message):
-        uri = self._player.get_property('uri')
-        info = self._tags.get(uri, {})
-
-        tags = message.parse_tag()
-        for key in tags.keys():
-            if (key not in USED_TAGS) or (key in info and info[key] == tags[key]):
-                continue
-            info[key] = tags[key]
-
-        if info:
-            self._tags[uri] = info
-
-    def _on_element_message(self, bus, message):
-        if message.structure.has_name('playbin2-stream-changed'):
-            uri = self._player.get_property('uri')
-            if uri in self._tags:
-                self._callback(uri, self._tags.pop(uri))
-            if self._uris:
-                self._next()
-            else:
-                self._idle = True
+        if self._uris:
+            self._next()
+        else:
+            self._idle = True
 
     def _next(self):
-        self._check_uri(self._uris.pop(0))
-        return False
+        self._player.props.uri = self._uris.pop(0)
+        self._player.set_state(gst.STATE_PLAYING)
 
     def add(self, uris):
         self._uris.extend(uris)
         if self._idle:
             self._idle = False
-            gobject.idle_add(self._next)
+            self._next()

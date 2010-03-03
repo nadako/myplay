@@ -10,6 +10,7 @@ Changes
    signals, object path and well-known bus name).
  * Remove set_current_and_play D-BUS method, instead SetCurrent now requires
    a second, boolean argument which defines whether to play the track.
+ * Misc code fixes and cleanups.
 
 0.2.1 (2010-02-25)
 ------------------
